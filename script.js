@@ -1,48 +1,42 @@
 var canvas = document.getElementById('canvas');
 var ctx = canvas.getContext("2d");
-var deltaX = 0;
-var deltaY = 0;
 
-window.addEventListener("keydown", keysPressed, false);
-window.addEventListener("keyup", keysReleased, false);
+const paddleHeight = 10;
+const paddleWidth = canvas.width / 9;
 
-var keys = [];
+let paddleX = (canvas.width - paddleWidth) / 2;
+let paddleY = (canvas.height - paddleHeight) /10;
 
-function keysPressed(e) {
-    keys[e.keyCode] = true;
-    // left
-    if (keys[37]) {
-        if (deltaX != 10)
-      deltaX -= 10;
-    }
-    // right
-    if (keys[39]) {
-      deltaX += 10;
-    }
-    // down
-    if (keys[38]) {
-      deltaY -= 10;
-    }
-    // up
-    if (keys[40]) {
-      deltaY += 10;
-    }
-    e.preventDefault();
- 
-    drawRectangle();
+window.addEventListener("keydown", moveSomething, false);
+  
+function moveSomething(e) {
+  switch(e.keyCode) {
+      case 37: //left
+        if (paddleX > 8 ) {
+          paddleX -= 10;
+        }
+        else {}
+          break;
+      case 39: //Right
+      if (paddleX + paddleWidth + 8 < canvas.width ) {
+        paddleX += 10;
+      }
+      else {}
+          break;
+  }
+  e.preventDefault();
+  drawPaddle();
 }
- 
-function keysReleased(e) {
-    keys[e.keyCode] = false;
-}       
 
-
-function drawRectangle() {
+function drawPaddle() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.beginPath();
     // the rectangle
-    ctx.rect(337.5 + deltaX , 550 + deltaY, 75, 25);
+    ctx.rect(paddleX, canvas.height - paddleHeight - 8, paddleWidth, paddleHeight);
     ctx.fillStyle = "gray";
     ctx.fill();
 }
 
+
+//draw paddle on load
+window.onload = drawPaddle();
