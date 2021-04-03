@@ -4,23 +4,33 @@ var ctx = canvas.getContext("2d");
 var brickRowCount = 9;
 var brickColumnCount = 5;
 
-const brickInfo = {
-    w: 70,
-    h: 20,
-    padding: 10,
-    offsetX: 20,
-    offsetY: 20,
-    visible: true,
+let leftArrow = false;
+let rightArrow = false;
+
+let LIFE = 3;
+
+const brick = {
+    row: 4,
+    column: 10,
+    width: 55,
+    height: 20,
+    offSetLeft: 20,
+    offSetTop: 20,
+    marginTop: 40,
+    fillColor: "#2e3548",
+    strokeColor: "#FFF",
 };
+
 const ball = {
     x: canvas.width / 2,
     y: canvas.height / 2,
     size: 10,
-    speed: 4,
-    dx: 2,
-    dy: -2,
+    speed: 8,
+    dx: 7,
+    dy: -7,
     visible: true,
 };
+
 const paddle = {
     x: canvas.width / 2,
     y: canvas.height - 25,
@@ -33,45 +43,63 @@ const paddle = {
 
 var interval = setInterval(draw, 10);
 
-const bricks = [];
-for (let i = 0; i < brickRowCount; i++) {
-    bricks[i] = [];
-    for (let j = 0; j < brickColumnCount; j++) {
-        const x = i * (brickInfo.w + brickInfo.padding) + brickInfo.offsetX;
-        const y = j * (brickInfo.h + brickInfo.padding) + brickInfo.offsetY;
-        bricks[i][j] = { x, y, ...brickInfo };
+let bricks = [];
+
+function createBricks() {
+    for (let r = 0; r < brick.row; r++) {
+        bricks[r] = [];
+        for (let c = 0; c < brick.column; c++) {
+            bricks[r][c] = {
+                x: c * (brick.offSetLeft + brick.width) + brick.offSetLeft - 11,
+                y:
+                    r * (brick.offSetTop + brick.height) +
+                    brick.offSetTop +
+                    brick.marginTop,
+                status: true,
+            };
+        }
     }
 }
 
+createBricks();
+
 function drawBricks() {
-    bricks.forEach((column) => {
-        column.forEach((brick) => {
-            ctx.beginPath();
-            ctx.rect(brick.x, brick.y, brick.w, brick.h);
-            ctx.fillStyle = brick.visible ? "#0095dd" : "transparent";
-            ctx.fill();
-            ctx.closePath();
-        });
-    });
-}
+    for (let r = 0; r < brick.row; r++) {
+        for (let c = 0; c < brick.column; c++) {
+            let b = bricks[r][c];
+            // if the brick isn't broken
+            if (b.status) {
+                ctx.fillStyle = brick.fillColor;
+                ctx.fillRect(b.x, b.y, brick.width, brick.height);
 
-bricks.forEach((column) => {
-    column.forEach((brick) => {
-        if (brick.visible) {
-            if (
-                ball.x - ball.size > brick.x && // left brick side check
-                ball.x + ball.size < brick.x + brick.w && // right brick side check
-                ball.y + ball.size > brick.y && // top brick side check
-                ball.y - ball.size < brick.y + brick.h // bottom brick side check
-            ) {
-                ball.dy *= -1;
-                brick.visible = false;
-
-                increaseScore();
+                ctx.strokeStyle = brick.strokeColor;
+                ctx.strokeRect(b.x, b.y, brick.width, brick.height);
             }
         }
-    });
-});
+    }
+}
+
+function ballBrickCollision() {
+    for (let r = 0; r < brick.row; r++) {
+        for (let c = 0; c < brick.column; c++) {
+            let b = bricks[r][c];
+            // if the brick isn't broken
+            if (b.status) {
+                if (
+                    ball.x + ball.size > b.x &&
+                    ball.x - ball.size < b.x + brick.width &&
+                    ball.y + ball.size > b.y &&
+                    ball.y - ball.size < b.y + brick.height
+                ) {
+                    //BRICK_HIT.play();
+                    ball.dy = -ball.dy;
+                    b.status = false; // the brick is broken
+                    //SCORE += SCORE_UNIT;
+                }
+            }
+        }
+    }
+}
 
 function drawBall() {
     ctx.beginPath();
@@ -104,8 +132,8 @@ function ballWallCollision() {
 function resetBall() {
     ball.x = canvas.width / 2;
     ball.y = paddle.y - ball.size;
-    ball.dx = 3 * (Math.random() * 2 - 1);
-    ball.dy = -3;
+    ball.dx = 6 * (Math.random() * 3 - 1);
+    ball.dy = -6;
 }
 
 function ballPaddleCollision() {
@@ -132,59 +160,26 @@ function drawPaddle() {
     ctx.closePath();
 }
 
-// window.addEventListener("keydown", movePaddle, false);
-
-// function movePaddle(e) {
-//     switch (e.keyCode) {
-//         case 37: //left
-//             if (paddle.x > 8) {
-//                 paddle.x -= paddle.dx;
-//             } else {
-//             }
-//             break;
-//         case 39: //Right
-//             if (paddle.x + paddle.w + 8 < canvas.width) {
-//                 paddle.x += paddle.dx;
-//             } else {
-//             }
-//             break;
-//     }
-//     e.preventDefault();
-//     drawPaddle();
-// }
-
-document.addEventListener("keydown", keyDown);
-document.addEventListener("keyup", keyUp);
-
-function keyDown(e) {
-    if (e.key === "Right" || e.key === "ArrowRight") {
-        paddle.dx = paddle.speed;
-    } else if (e.key === "Left" || e.key === "ArrowLeft") {
-        paddle.dx = -paddle.speed;
+document.addEventListener("keydown", function (event) {
+    if (event.keyCode == 37) {
+        leftArrow = true;
+    } else if (event.keyCode == 39) {
+        rightArrow = true;
     }
-}
-
-function keyUp(e) {
-    if (
-        e.key === "Right" ||
-        e.key === "ArrowRight" ||
-        e.key === "Left" ||
-        e.key === "ArrowLeft"
-    ) {
-        paddle.dx = 0;
+});
+document.addEventListener("keyup", function (event) {
+    if (event.keyCode == 37) {
+        leftArrow = false;
+    } else if (event.keyCode == 39) {
+        rightArrow = false;
     }
-}
+});
 
 function movePaddle() {
-    paddle.x += paddle.dx;
-
-    // Wall detection
-    if (paddle.x + paddle.w > canvas.width) {
-        paddle.x = canvas.width - paddle.w;
-    }
-
-    if (paddle.x < 0) {
-        paddle.x = 0;
+    if (rightArrow && paddle.x + paddle.w < canvas.width) {
+        paddle.x += paddle.dx;
+    } else if (leftArrow && paddle.x > 0) {
+        paddle.x -= paddle.dx;
     }
 }
 
@@ -199,6 +194,7 @@ function update() {
     moveBall();
     ballWallCollision();
     ballPaddleCollision();
+    ballBrickCollision();
 }
 
 function gameLoop() {
